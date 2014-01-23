@@ -24,16 +24,130 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-from flask import Flask
+
+import datetime
+import hashlib
+import json
+import os
+import sys
+import urllib2
+import uuid
+
+from flask import Flask, g, jsonify, redirect, render_template
+from flask import abort, Response, url_for
 
 app = Flask(__name__)
 
-PREFIX = "/coasl-rda-ld-2014"
+#URL_PREFIX = "/coasl-webinar-2014"
+URL_PREFIX = ""
+
+@app.route('/coasl-webinar-participant-badge.json')
+def badge_class():
+    return jsonify({
+        "name": "CoASL RDA and Linked Data Webinar Participation Badge",
+        "description": """This Participant Badge was issued by Jeremy Nelson and intro2libsys.info for participation in the CoASL Webinar on RDA and Linked Data on 24 January 2014.""",
+        "image": "http://intro2libsys.info{0}".format(
+            url_for('static', filename="img/badge-template.png")),
+        "criteria": "http://intro2libsys.info/coasl-webinar-2014/",
+        "tags": ["CoASL", "Special Libraries", "Linked Data", "RDA"],
+        "issuer": "http://intro2libsys.info{0}".format(
+            url_for('badge_issuer_org'))})
+
+@app.route('{0}/badge-issuer-organization.json'.format(URL_PREFIX))
+def badge_issuer_org():
+    return jsonify(
+        {"name": "intro2libsys.info LLC",
+         "url": "http://intro2libsys.info",
+         "email": "jermnelson@gmail.com",
+         "revocationList": "http://intro2libsys.info{0}".format(
+             url_for('badge_revoked'))})
+
+@app.route('{0}/revoked.json'.format(URL_PREFIX))
+def badge_revoked():
+    return jsonify({})
+
+@app.route("{0}/<uid>-coasl-webinar-participant-badge.json".format(URL_PREFIX))
+def badge_for_participant(uid):
+    participant_badge_location = os.path.join(PROJECT_ROOT,
+                                              'badges',
+                                              '{0}.json'.format(uid))
+    if os.path.exists(participant_badge_location):
+        participant_badge = json.load(open(participant_badge_location, 'rb'))
+        if os.path.exists(os.path.join(PROJECT_ROOT,
+                                       'badges',
+                                       'img', '{0}.png'.format(uid))):
+            participant_badge['image'] = "http://intro2libsys.info{0}/{1}-coding-marc-linked-data-badge.png".format(
+              URL_PREFIX,
+              uid)
+        return jsonify(participant_badge)
+    else:
+        abort(404)
+
+@app.route("{0}/<uid>-coasl-webinar-participant-badge.png".format(URL_PREFIX))
+def badge_image_for_participant(uid):
+    participant_img_location = os.path.join(PROJECT_ROOT,
+                                            'badges',
+                                            'img',
+                                            '{0}.png'.format(uid))
+    if os.path.exists(participant_img_location):
+        img = None
+        with open(participant_img_location, 'rb') as img_file:
+            img = img_file.read()
+        return Response(img, mimetype='image/png')
+    else:
+        abort(404)
+
+def bake_badge(**kwargs):
+    assert_url = kwargs.get('url')
+    try:
+        badge_url = 'http://beta.openbadges.org/baker?assertion={0}'.format(assert_url)
+        baking_service = urllib2.urlopen(badge_url)
+        raw_image = baking_service.read()
+        return raw_image
+    except:
+        print("Exception occurred: {0}".format(sys.exc_info()[0]))
+        return None
+
+def issue_badge(**kwargs):
+    identity_hash = hashlib.sha256(kwargs.get("email"))
+    identity_hash.update(IDENTITY_SALT)
+    uid = str(uuid.uuid4()).split("-")[0]
+    uid_url = "http://intro2libsys.info{0}/{1}-coasl-webinar-participant-badge.json".format(
+       URL_PREFIX,
+       uid)
+    badge_json = {
+        'badge': "http://intro2libsys.info{0}/coasl-webinar-participant-badge.json".format(
+            URL_PREFIX),
+        'issuedOn': kwargs.get('issuedOne', datetime.datetime.now().isoformat()),
+        'recipient': {
+            'type': "email",
+            'hashed': True,
+            'salt': IDENTITY_SALT,
+            'identity': "sha256${0}".format(
+                identity_hash.hexdigest())},
+        'verify': {
+            'type': 'hosted',
+            'url': uid_url},
+        'uid': uid
+        }
+    # Save badge to badges directory
+    json.dump(badge_json,
+              open(os.path.join('badges', '{0}.json'.format(uid)), 'wb'),
+              indent=2,
+              sort_keys=True)
+    raw_badge_img = bake_badge(url=uid_url)
+    if raw_badge_img:
+        with open(os.path.join('badges', 'img', '{0}.png'.format(uid)), 'wb') as img_file:
+            img_file.write(raw_badge_img)
+        print("Successfully added {0} and badge image".format(uid))
+    else:
+        print("ERROR unable to issue badge")
+
 
 @app.route("/")
-#@app.route("{0}/".format(PREFIX))
+@app.route("{0}/".format(URL_PREFIX))
 def index():
-    return "In CoASL Webinar Badge and Resources"
+    return render_template('index.html')
 
 def main():
     app.run(port=8002,
