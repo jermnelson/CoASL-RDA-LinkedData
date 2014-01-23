@@ -144,8 +144,12 @@ def issue_badge(**kwargs):
         print("ERROR unable to issue badge")
 
 
+@app.route("/notebook")
+def notebook():
+    notebook = json.load(open('CoASL-RDA-Linked-data.ipynb'))
+    return jsonify(notebook)
+
 @app.route("/")
-@app.route("{0}/".format(URL_PREFIX))
 def index():
     return render_template('index.html')
 
