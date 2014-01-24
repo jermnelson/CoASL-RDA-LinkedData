@@ -51,7 +51,7 @@ def badge_class():
         "name": "CoASL RDA and Linked Data Webinar Participation Badge",
         "description": """This Participant Badge was issued by Jeremy Nelson and intro2libsys.info for participation in the CoASL Webinar on RDA and Linked Data on 24 January 2014.""",
         "image": "http://intro2libsys.info{0}".format(
-            url_for('static', filename="img/badge-template.png")),
+            url_for('static', filename="img/participant-badge.png")),
         "criteria": "http://intro2libsys.info/coasl-webinar-2014/",
         "tags": ["CoASL", "Special Libraries", "Linked Data", "RDA"],
         "issuer": "http://intro2libsys.info{0}".format(
@@ -81,7 +81,7 @@ def badge_for_participant(uid):
         if os.path.exists(os.path.join(PROJECT_ROOT,
                                        'badges',
                                        'img', '{0}.png'.format(uid))):
-            participant_badge['image'] = "http://intro2libsys.info/coasl-webinar-2014/{}-coding-marc-linked-data-badge.png".format(
+            participant_badge['image'] = "http://intro2libsys.info/coasl-webinar-2014/{}-coasl-webinar-participant-badge.png".format(
               uid)
         return jsonify(participant_badge)
     else:
@@ -105,11 +105,12 @@ def bake_badge(**kwargs):
     assert_url = kwargs.get('url')
     try:
         badge_url = 'http://beta.openbadges.org/baker?assertion={0}'.format(assert_url)
+        print(badge_url)
         baking_service = urllib2.urlopen(badge_url)
         raw_image = baking_service.read()
         return raw_image
     except:
-        print("Exception occurred: {0}".format(sys.exc_info()[0]))
+        print("Exception occurred: {0}".format(sys.exc_info()))
         return None
 
 def issue_badge(**kwargs):
@@ -119,8 +120,7 @@ def issue_badge(**kwargs):
     uid_url = "http://intro2libsys.info/coasl-webinar-2014/{}-coasl-webinar-participant-badge.json".format(uid)
     print(uid_url)   
     badge_json = {
-        'badge': "http://intro2libsys.info{0}/coasl-webinar-participant-badge.json".format(
-            URL_PREFIX),
+        'badge': "http://intro2libsys.info/coasl-webinar-2014/coasl-webinar-participant-badge.json",
         'issuedOn': kwargs.get('issuedOne', datetime.datetime.now().isoformat()),
         'recipient': {
             'type': "email",
