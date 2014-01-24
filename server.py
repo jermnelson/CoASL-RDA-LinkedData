@@ -38,6 +38,10 @@ from flask import abort, Response, url_for
 
 app = Flask(__name__)
 
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+
+IDENTITY_SALT = 'CoASL Webinar 2014'
+
 #URL_PREFIX = "/coasl-webinar-2014"
 URL_PREFIX = ""
 
@@ -53,7 +57,7 @@ def badge_class():
         "issuer": "http://intro2libsys.info{0}".format(
             url_for('badge_issuer_org'))})
 
-@app.route('{0}/badge-issuer-organization.json'.format(URL_PREFIX))
+@app.route('/badge-issuer-organization.json')
 def badge_issuer_org():
     return jsonify(
         {"name": "intro2libsys.info LLC",
@@ -62,28 +66,28 @@ def badge_issuer_org():
          "revocationList": "http://intro2libsys.info{0}".format(
              url_for('badge_revoked'))})
 
-@app.route('{0}/revoked.json'.format(URL_PREFIX))
+@app.route('/revoked.json')
 def badge_revoked():
     return jsonify({})
 
-@app.route("{0}/<uid>-coasl-webinar-participant-badge.json".format(URL_PREFIX))
+@app.route("/<uid>-coasl-webinar-participant-badge.json")
 def badge_for_participant(uid):
     participant_badge_location = os.path.join(PROJECT_ROOT,
                                               'badges',
                                               '{0}.json'.format(uid))
+    print(participant_badge_location)
     if os.path.exists(participant_badge_location):
         participant_badge = json.load(open(participant_badge_location, 'rb'))
         if os.path.exists(os.path.join(PROJECT_ROOT,
                                        'badges',
                                        'img', '{0}.png'.format(uid))):
-            participant_badge['image'] = "http://intro2libsys.info{0}/{1}-coding-marc-linked-data-badge.png".format(
-              URL_PREFIX,
+            participant_badge['image'] = "http://intro2libsys.info/coasl-webinar-2014/{}-coding-marc-linked-data-badge.png".format(
               uid)
         return jsonify(participant_badge)
     else:
         abort(404)
 
-@app.route("{0}/<uid>-coasl-webinar-participant-badge.png".format(URL_PREFIX))
+@app.route("/<uid>-coasl-webinar-participant-badge.png")
 def badge_image_for_participant(uid):
     participant_img_location = os.path.join(PROJECT_ROOT,
                                             'badges',
@@ -112,9 +116,8 @@ def issue_badge(**kwargs):
     identity_hash = hashlib.sha256(kwargs.get("email"))
     identity_hash.update(IDENTITY_SALT)
     uid = str(uuid.uuid4()).split("-")[0]
-    uid_url = "http://intro2libsys.info{0}/{1}-coasl-webinar-participant-badge.json".format(
-       URL_PREFIX,
-       uid)
+    uid_url = "http://intro2libsys.info/coasl-webinar-2014/{}-coasl-webinar-participant-badge.json".format(uid)
+    print(uid_url)   
     badge_json = {
         'badge': "http://intro2libsys.info{0}/coasl-webinar-participant-badge.json".format(
             URL_PREFIX),
