@@ -75,7 +75,6 @@ def badge_for_participant(uid):
     participant_badge_location = os.path.join(PROJECT_ROOT,
                                               'badges',
                                               '{0}.json'.format(uid))
-    print(participant_badge_location)
     if os.path.exists(participant_badge_location):
         participant_badge = json.load(open(participant_badge_location, 'rb'))
         if os.path.exists(os.path.join(PROJECT_ROOT,
@@ -105,7 +104,6 @@ def bake_badge(**kwargs):
     assert_url = kwargs.get('url')
     try:
         badge_url = 'http://beta.openbadges.org/baker?assertion={0}'.format(assert_url)
-        print(badge_url)
         baking_service = urllib2.urlopen(badge_url)
         raw_image = baking_service.read()
         return raw_image
