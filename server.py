@@ -30,7 +30,10 @@ import hashlib
 import json
 import os
 import sys
-import urllib2
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 import uuid
 
 from flask import Flask, g, jsonify, redirect, render_template
